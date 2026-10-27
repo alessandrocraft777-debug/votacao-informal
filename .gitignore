@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.secret
+votos.sqlite
+votos.sqlite.tmp
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal
+*.log
+node_modules
+migrar-votos.js

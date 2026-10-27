@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#166534">
+<title>Enquete informal — Brasil</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f2;color:#17221b;font-family:Arial,sans-serif}
+main{max-width:560px;margin:24px auto;padding:16px}
+.card{background:#fff;padding:22px;border-radius:18px;box-shadow:0 5px 22px #0000000c}
+h1{text-align:center;font-size:27px;line-height:1.25;margin:0 0 12px}
+.subtitle{text-align:center;color:#536158;line-height:1.5;font-size:15px}
+.candidates{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
+.candidate{border:2px solid #dce4de;border-radius:14px;padding:10px;cursor:pointer;text-align:center}
+.candidate:has(input:checked){border-color:#15803d;background:#f0fdf4}
+.candidate input{accent-color:#15803d;width:19px;height:19px}
+.photo{width:100%;height:190px;object-fit:cover;border-radius:9px;background:#e8eee9}
+.name{display:block;font-weight:bold;font-size:17px;margin:10px 0}
+.choose{display:flex;align-items:center;justify-content:center;gap:6px}
+button{width:100%;padding:16px;border:0;border-radius:10px;background:#166534;color:white;font-size:16px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.6}
+#msg{text-align:center;line-height:1.5;margin-top:14px}
+.notice{text-align:center;color:#657168;font-size:12px;line-height:1.5;margin-top:20px}
+footer{text-align:center;margin-top:18px}
+a{color:#166534}
+@media(max-width:360px){.photo{height:145px}.name{font-size:15px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<main>
+<section class="card">
+<h1>O futuro do seu país começa com a sua escolha!</h1>
+<p class="subtitle">Quem você escolheria para ser presidente do Brasil? Vote agora na nossa enquete informal.</p>
+
+<form id="form">
+<div class="candidates">
+<label class="candidate">
+<img class="photo" src="/images/lula.jpg" alt="Foto de Lula"
+onerror="this.style.display='none'">
+<span class="name">Lula</span>
+<span class="choose">
+<input type="radio" name="candidato" value="Lula" required>
+<span>Selecionar</span>
+</span>
+</label>
+
+<label class="candidate">
+<img class="photo" src="/images/flavio-bolsonaro.jpg" alt="Foto de Flávio Bolsonaro"
+onerror="this.style.display='none'">
+<span class="name">Flávio Bolsonaro</span>
+<span class="choose">
+<input type="radio" name="candidato" value="Flávio Bolsonaro" required>
+<span>Selecionar</span>
+</span>
+</label>
+</div>
+
+<button id="vote" type="submit">Confirmar meu voto</button>
+</form>
+
+<div id="msg" role="status"></div>
+
+<p class="notice">
+Esta é uma enquete informal, sem vínculo com a Justiça Eleitoral.
+Não representa uma eleição oficial.
+</p>
+
+<footer><a href="/resultados">Ver resultados</a></footer>
+</section>
+</main>
+
+<script>
+const KEY = 'enquete_dispositivo_id';
+const VOTED = 'enquete_voto_enviado';
+let token = localStorage.getItem(KEY);
+
+if (!token) {
+  token = crypto.randomUUID();
+  localStorage.setItem(KEY, token);
+}
+
+const form = document.getElementById('form');
+const button = document.getElementById('vote');
+const msg = document.getElementById('msg');
+
+if (localStorage.getItem(VOTED)) {
+  button.disabled = true;
+  msg.textContent = 'Este navegador já enviou um voto. Obrigado!';
+}
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (localStorage.getItem(VOTED)) return;
+
+  const selected = form.querySelector('input[name="candidato"]:checked');
+  if (!selected) return;
+
+  button.disabled = true;
+  msg.textContent = 'Registrando seu voto...';
+
+  try {
+    const response = await fetch('/api/votar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({token, candidato: selected.value})
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      localStorage.setItem(VOTED, '1');
+      form.hidden = true;
+      msg.textContent = data.mensagem;
+    } else if (response.status === 409) {
+      localStorage.setItem(VOTED, '1');
+      form.hidden = true;
+      msg.textContent = data.erro;
+    } else {
+      msg.textContent = data.erro || 'Não foi possível votar.';
+      button.disabled = false;
+    }
+  } catch (error) {
+    msg.textContent = 'Falha de conexão. Tente novamente.';
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

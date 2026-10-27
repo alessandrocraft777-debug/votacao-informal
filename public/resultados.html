@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resultados da enquete</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f3f5f4;margin:0;padding:20px;color:#17221b}
+main{max-width:440px;margin:25px auto;background:white;padding:24px;border-radius:16px}
+h1{text-align:center}
+.item{margin:24px 0}
+.label{display:flex;justify-content:space-between;gap:10px}
+.track{background:#e5e7eb;height:18px;border-radius:9px;overflow:hidden;margin-top:8px}
+.bar{height:100%;width:0;background:#15803d}
+a{color:#166534}
+.note{font-size:13px;color:#59655d;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+<h1>Resultado da enquete</h1>
+<p class="note">Enquete informal, sem valor eleitoral oficial.</p>
+<h2 id="total">Carregando...</h2>
+<div id="items"></div>
+<p><a href="/">Voltar à votação</a></p>
+</main>
+<script>
+async function atualizar(){
+  const r = await fetch('/api/resultados', {cache:'no-store'});
+  const d = await r.json();
+  document.getElementById('total').textContent = 'Total de votos: ' + d.total;
+  const box = document.getElementById('items');
+  box.replaceChildren();
+
+  for (const nome of ['Lula','Flávio Bolsonaro']) {
+    const votos = d.candidatos[nome] || 0;
+    const pct = d.total ? votos / d.total * 100 : 0;
+    const item = document.createElement('div');
+    item.className = 'item';
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    const n = document.createElement('strong');
+    n.textContent = nome;
+    const v = document.createElement('span');
+    v.textContent = votos + ' (' + pct.toFixed(1) + '%)';
+    label.append(n,v);
+
+    const track = document.createElement('div');
+    track.className = 'track';
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.width = pct + '%';
+    track.append(bar);
+    item.append(label,track);
+    box.append(item);
+  }
+}
+atualizar().catch(() => {
+  document.getElementById('total').textContent = 'Não foi possível carregar os resultados.';
+});
+</script>
+</body>
+</html>
